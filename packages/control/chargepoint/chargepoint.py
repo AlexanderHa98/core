@@ -6,6 +6,8 @@ import traceback
 from typing import Dict, Optional, Tuple
 from fnmatch import fnmatch
 
+from ocpp.v16.enums import ChargePointStatus
+
 from control.algorithm.utils import get_medium_charging_current
 from control.chargelog import chargelog
 from control import data
@@ -179,9 +181,8 @@ class Chargepoint(ChargepointRfidMixin):
         # werden soll (-1), Daten zurücksetzen.
         # Ocpp Stop Funktion aufrufen
         if not self.data.get.plug_state and self.data.set.ocpp_transaction_id is not None:
-            data.data.optional_data.stop_transaction(
+            data.data.ocpp_client.stop_transaction(
                 self.data.config.ocpp_chargebox_id,
-                self.chargepoint_module.fault_state,
                 self.data.get.imported,
                 self.data.set.ocpp_transaction_id,
                 self.data.set.rfid)
@@ -722,6 +723,10 @@ class Chargepoint(ChargepointRfidMixin):
             except Exception:
                 log.exception(f"Fehler bei Ladestop,cp{self.num}")
 
+            print(
+                f"                                                                                                        {self.get_ocpp_status()}")
+            self.ocpp_send_status_notification()
+            data.data.ocpp_client.send_heart_beat(self.data.config.ocpp_chargebox_id)
             # OCPP Start Transaction nach Anstecken
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.set.ocpp_transaction_id is None and self.data.get.charge_state)):
@@ -729,9 +734,8 @@ class Chargepoint(ChargepointRfidMixin):
                 if self.data.config.ocpp_chargebox_id:
                     # Starte nur Transaction wenn bereits ein RFID Tag oder die Fahrzeug ID erkannt wurde
                     if (self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id):
-                        self.data.set.ocpp_transaction_id = data.data.optional_data.start_transaction(
+                        self.data.set.ocpp_transaction_id = data.data.ocpp_client.start_transaction(
                             self.data.config.ocpp_chargebox_id,
-                            self.chargepoint_module.fault_state,
                             self.num,
                             self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id,
                             self.data.get.imported)
@@ -852,3 +856,52 @@ class Chargepoint(ChargepointRfidMixin):
             return True
         else:
             return False
+
+    def get_ocpp_status(self):
+        # Hier dann get_OCPP_Status
+        #   -> mapped den "openWB-Status" auf nen OCPP_Status
+
+        if self.data.get.fault_state:
+            return ChargePointStatus.faulted
+
+        if not self.data.get.plug_state:
+            return ChargePointStatus.available
+
+        if self.data.set.ocpp_transaction_id is None:
+            return ChargePointStatus.preparing
+
+        if self.data.get.charge_state:
+            return ChargePointStatus.charging
+
+        if self.data.set.current == 0:
+            return ChargePointStatus.suspended_eves
+
+        return ChargePointStatus.suspended_ev
+
+    def ocpp_send_status_notification(self):
+        # Hier dann die StatusNotification versenden
+        # im Ocpp wird sich der Client gemerkt und
+        # nur neu gesendet, wenn sich der Status geändert hat
+        data.data.ocpp_client.status_notification(
+            chargebox_id=self.data.config.ocpp_chargebox_id,
+            chargebox_num=self.num,
+            fault_state=self.data.get.fault_state,
+            fault_state_str=self.data.get.fault_str,
+            status=self.get_ocpp_status()
+        )
+#            connector_id=self.num,
+#            error_code=self.get_ocpp_error_code(),
+#            status=self.get_ocpp_status(),
+#            timestamp=self._get_formatted_time(),
+ #           info=self.data.get.fault_str,
+ #           vendor_id="openWB",
+ #           vendor_error_code=self.data.get.fault_state,
+ # )
+
+        #        connector_id=self.num,
+        #        error_code=,
+        #        status=status,
+        #        timestamp=self._get_formatted_time(),
+        #        info=self.data.get.fault_str,
+        #        vendor_id="openWB",
+        #        vendor_error_code=self.data.get.fault_state,
