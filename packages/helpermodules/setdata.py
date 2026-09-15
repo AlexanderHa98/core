@@ -501,8 +501,6 @@ class SetData:
                     self._validate_value(msg, str)
                 elif "/set/plug_time" in msg.topic:
                     self._validate_value(msg, float)
-                elif "/set/ocpp_transaction_id" in msg.topic:
-                    self._validate_value(msg, int)
                 elif "/set/log" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/set/ev_prev" in msg.topic:
@@ -573,11 +571,15 @@ class SetData:
             self._validate_value(msg, float, [(float("-inf"), 0)])
         elif "/get/power" in msg.topic:
             self._validate_value(msg, float)
+        elif "/get/ocpp/transaction_id" in msg.topic:
+            self._validate_value(msg, int)
         elif "/get/phases_in_use" in msg.topic:
             self._validate_value(msg, int, [(0, 3)])
         elif ("/get/charge_state" in msg.topic or
                 "/get/plug_state" in msg.topic or
-                "/get/ocpp/availability" in msg.topic):
+                "/get/ocpp/availability" in msg.topic or
+                "/get/ocpp/remote_stop" in msg.topic or
+                "/get/ocpp/tag_accepted" in msg.topic):
             self._validate_value(msg, bool)
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
