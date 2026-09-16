@@ -8,7 +8,7 @@ from typing import Dict, List, Optional as TypingOptional, Union
 from datetime import datetime
 
 from control import data
-from control.ocpp import OcppClient
+from control.ocpp.ocpp_client import OcppClient
 from control.optional_data import FlexibleTariff, GridFee, OptionalData, PricingGet
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
