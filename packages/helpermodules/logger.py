@@ -274,6 +274,15 @@ def setup_logging() -> None:
     mqtt_file_handler.addFilter(RedactingFilter())
     mqtt_log.addHandler(mqtt_file_handler)
 
+    # OCPP logger (openWB control.ocpp package and the external ocpp library)
+    ocpp_file_handler = RotatingFileHandler(RAMDISK_PATH / 'ocpp.log', maxBytes=mb_to_bytes(3), backupCount=1)
+    ocpp_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
+    ocpp_file_handler.addFilter(RedactingFilter())
+    for ocpp_logger_name in ("control.ocpp", "ocpp"):
+        ocpp_log = logging.getLogger(ocpp_logger_name)
+        ocpp_log.propagate = False
+        ocpp_log.addHandler(ocpp_file_handler)
+
     # Steuve control command logger
     steuve_control_command_log = logging.getLogger("steuve_control_command")
     steuve_control_command_log.propagate = False
