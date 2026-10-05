@@ -1,9 +1,7 @@
 """Optionale Module
 """
-import copy
 import logging
 from math import ceil
-from threading import Thread
 from typing import Dict, List, Optional as TypingOptional, Union
 from datetime import datetime
 
@@ -14,7 +12,6 @@ from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
-from helpermodules.utils import thread_handler
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.configurable_monitoring import ConfigurableMonitoring
 
